@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe | NutritionApp</title>
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+    <nav class="navbar">
+        <h1 class="nav-title">NutritionApp</h1>
+        <div class="nav-right">
+            <span id="nav-email" class="nav-email"></span>
+            <button id="logout-btn" class="btn-logout">Logout</button>
+        </div>
+    </nav>
+
+    <main class="recipe-container">
+        <button class="btn-back" onclick="window.history.back()">← Back to Browse</button>
+
+        <div id="loading" class="loading">Loading recipe...</div>
+        <div id="error" class="error-banner hidden"></div>
+
+        <div id="recipe-detail" class="recipe-detail hidden">
+            <div class="recipe-header">
+                <img id="recipe-img" src="" alt="" class="recipe-img" />
+                <div class="recipe-meta">
+                    <h1 id="recipe-title" class="recipe-title"></h1>
+                    <div class="recipe-stats">
+                        <div class="stat-box">
+                            <span class="stat-value" id="stat-calories"></span>
+                            <span class="stat-label">Calories</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-value" id="stat-protein"></span>
+                            <span class="stat-label">Protein</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-value" id="stat-carbs"></span>
+                            <span class="stat-label">Carbs</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-value" id="stat-fat"></span>
+                            <span class="stat-label">Fat</span>
+                        </div>
+                    </div>
+                    <div class="recipe-tags" id="recipe-tags"></div>
+                </div>
+            </div>
+
+            <div class="recipe-body">
+                <div class="recipe-section">
+                    <h2>Ingredients</h2>
+                    <ul id="ingredients-list" class="ingredients-list"></ul>
+                </div>
+                <div class="recipe-section">
+                    <h2>Instructions</h2>
+                    <ol id="instructions-list" class="instructions-list"></ol>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/config.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/recipe.js"></script>
+</body>
+</html>
