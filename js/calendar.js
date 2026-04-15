@@ -6,7 +6,9 @@ document.getElementById('logout-btn').addEventListener('click', logout);
 
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
-const todayStr = new Date().toISOString().split('T')[0];
+const now = new Date();
+const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
 
 // ─── STORAGE ───
 function getLogForDate(dateStr) {

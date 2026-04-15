@@ -5,7 +5,8 @@ document.getElementById('nav-email').textContent = session.email;
 document.getElementById('logout-btn').addEventListener('click', logout);
 
 const GOALS_KEY = 'goals_' + session.email;
-const LOG_KEY = 'log_' + new Date().toISOString().split('T')[0];
+const now = new Date();
+const LOG_KEY = 'log_' + `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
 function getGoals() {
     return JSON.parse(localStorage.getItem(GOALS_KEY)) || null;

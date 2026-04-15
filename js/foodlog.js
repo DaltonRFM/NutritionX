@@ -4,7 +4,8 @@ const session = getSession();
 document.getElementById('nav-email').textContent = session.email;
 document.getElementById('logout-btn').addEventListener('click', logout);
 
-const today = new Date().toISOString().split('T')[0];
+const now = new Date();
+const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 const LOG_KEY = 'log_' + today;
 document.getElementById('log-date').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
