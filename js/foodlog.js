@@ -71,6 +71,7 @@ function renderLog() {
 }
 
 function updateTotals(totals) {
+
     document.getElementById('total-calories').textContent = Math.round(totals.calories);
     document.getElementById('total-protein').textContent = Math.round(totals.protein) + 'g';
     document.getElementById('total-carbs').textContent = Math.round(totals.carbs) + 'g';
@@ -85,7 +86,7 @@ function switchTab(tab) {
     document.getElementById('tab-manual').classList.toggle('active', tab === 'manual');
 }
 
-// ─── SPOONACULAR SEARCH ───
+// ─── SPOONACULAR search ───
 document.getElementById('food-search-btn').addEventListener('click', searchFood);
 document.getElementById('food-search-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') searchFood();
@@ -99,6 +100,7 @@ async function searchFood() {
     results.innerHTML = '<p class="muted-text">Searching...</p>';
 
     try {
+        
         const recipes = await searchRecipes(query, 5);
         results.innerHTML = '';
 
