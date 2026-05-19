@@ -1,38 +1,66 @@
-const AUTH_KEY = 'nutrition_user';
+const API_URL = CONFIG.API_URL;
 
-function register(email, password) {
-    const existing = getUser(email);
-    if (existing) {
-        return { success: false, message: 'An account with this email already exists.' };
+async function register(email, password) {
+    try {
+        const response = await fetch(`${API_URL}/api/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            return { success: false, message: data.message };
+        }
+
+        sessionStorage.setItem('token', data.token);
+        sessionStorage.setItem('email', data.email);
+        return { success: true };
+
+    } catch (err) {
+        return { success: false, message: 'Could not connect to server.' };
     }
-
-    const user = { email, password };
-    localStorage.setItem(AUTH_KEY + '_' + email, JSON.stringify(user));
-    sessionStorage.setItem(AUTH_KEY + '_session', JSON.stringify(user));
-    return { success: true };
 }
 
-function login(email, password) {
-    const user = getUser(email);
-    if (!user || user.password !== password) {
-        return { success: false, message: 'Invalid email or password.' };
-    }
+async function login(email, password) {
+    try {
+        const response = await fetch(`${API_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
 
-    sessionStorage.setItem(AUTH_KEY + '_session', JSON.stringify(user));
-    return { success: true };
+        const data = await response.json();
+
+        if (!response.ok) {
+            return { success: false, message: data.message };
+        }
+
+        sessionStorage.setItem('token', data.token);
+        sessionStorage.setItem('email', data.email);
+        return { success: true };
+
+    } catch (err) {
+        return { success: false, message: 'Could not connect to server.' };
+    }
 }
 
 function logout() {
-    sessionStorage.removeItem(AUTH_KEY + '_session');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('email');
     window.location.href = '/pages/login.html';
 }
 
 function getSession() {
-    return JSON.parse(sessionStorage.getItem(AUTH_KEY + '_session'));
+    const token = sessionStorage.getItem('token');
+    const email = sessionStorage.getItem('email');
+    if (!token || !email) return null;
+    return { token, email };
 }
 
-function getUser(email) {
-    return JSON.parse(localStorage.getItem(AUTH_KEY + '_' + email));
+function getToken() {
+    return sessionStorage.getItem('token');
 }
 
 function requireAuth() {

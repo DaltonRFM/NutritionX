@@ -4,31 +4,53 @@ const session = getSession();
 document.getElementById('nav-email').textContent = session.email;
 document.getElementById('logout-btn').addEventListener('click', logout);
 
-const GOALS_KEY = 'goals_' + session.email;
 const now = new Date();
-const LOG_KEY = 'log_' + `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-function getGoals() {
-    return JSON.parse(localStorage.getItem(GOALS_KEY)) || null;
+// ─── API CALLS ───
+async function fetchGoals() {
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/goals`, {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        return await res.json();
+    } catch (err) {
+        console.error('Failed to fetch goals:', err);
+        return null;
+    }
 }
 
-function getTodayLog() {
-    return JSON.parse(localStorage.getItem(LOG_KEY)) || [];
+async function fetchTodayLog() {
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/foodlog/${today}`, {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        return await res.json();
+    } catch (err) {
+        console.error('Failed to fetch log:', err);
+        return [];
+    }
 }
 
-function getTodayTotals() {
-    const log = getTodayLog();
-    return log.reduce((totals, item) => {
-        totals.calories += item.calories || 0;
-        totals.protein += item.protein || 0;
-        totals.carbs += item.carbs || 0;
-        totals.fat += item.fat || 0;
-        return totals;
-    }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+async function saveGoals(goals) {
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/goals`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
+            body: JSON.stringify(goals)
+        });
+        return await res.json();
+    } catch (err) {
+        console.error('Failed to save goals:', err);
+        return null;
+    }
 }
 
-function loadGoalsIntoForm() {
-    const goals = getGoals();
+// ─── RENDER ───
+function loadGoalsIntoForm(goals) {
     if (!goals) return;
     document.getElementById('goal-calories').value = goals.calories || '';
     document.getElementById('goal-protein').value = goals.protein || '';
@@ -36,8 +58,7 @@ function loadGoalsIntoForm() {
     document.getElementById('goal-fat').value = goals.fat || '';
 }
 
-function renderProgress() {
-    const goals = getGoals();
+function renderProgress(goals, log) {
     const noGoalsMsg = document.getElementById('no-goals-msg');
 
     if (!goals) {
@@ -46,7 +67,14 @@ function renderProgress() {
     }
 
     noGoalsMsg.classList.add('hidden');
-    const totals = getTodayTotals();
+
+    const totals = (log || []).reduce((acc, item) => {
+        acc.calories += item.calories || 0;
+        acc.protein += item.protein || 0;
+        acc.carbs += item.carbs || 0;
+        acc.fat += item.fat || 0;
+        return acc;
+    }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
     const nutrients = [
         { key: 'calories', label: 'kcal' },
@@ -68,7 +96,8 @@ function renderProgress() {
     });
 }
 
-document.getElementById('save-goals-btn').addEventListener('click', () => {
+// ─── SAVE BUTTON ───
+document.getElementById('save-goals-btn').addEventListener('click', async () => {
     const goals = {
         calories: parseFloat(document.getElementById('goal-calories').value) || 0,
         protein: parseFloat(document.getElementById('goal-protein').value) || 0,
@@ -76,14 +105,21 @@ document.getElementById('save-goals-btn').addEventListener('click', () => {
         fat: parseFloat(document.getElementById('goal-fat').value) || 0
     };
 
-    localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
+    const saved = await saveGoals(goals);
 
     const success = document.getElementById('goals-success');
     success.classList.remove('hidden');
     setTimeout(() => success.classList.add('hidden'), 3000);
 
-    renderProgress();
+    const log = await fetchTodayLog();
+    renderProgress(saved, log);
 });
 
-loadGoalsIntoForm();
-renderProgress();
+// ─── INIT ───
+async function init() {
+    const [goals, log] = await Promise.all([fetchGoals(), fetchTodayLog()]);
+    loadGoalsIntoForm(goals);
+    renderProgress(goals, log);
+}
+
+init();

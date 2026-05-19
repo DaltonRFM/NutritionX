@@ -7,39 +7,58 @@ document.getElementById('logout-btn').addEventListener('click', logout);
 const now = new Date();
 const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 const LOG_KEY = 'log_' + today;
-document.getElementById('log-date').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+document.getElementById('log-date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-// ─── LOG STORAGE ───
-function getLog() {
-    return JSON.parse(localStorage.getItem(LOG_KEY)) || [];
+// ─── API CALLS ───
+async function fetchLog() {
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/foodlog/${today}`, {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        return await res.json();
+    } catch (err) {
+        console.error('Failed to fetch log:', err);
+        return [];
+    }
 }
 
-function saveLog(log) {
-    localStorage.setItem(LOG_KEY, JSON.stringify(log));
+async function saveLog(items) {
+    try {
+        await fetch(`${CONFIG.API_URL}/api/foodlog/${today}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
+            body: JSON.stringify({ items })
+        });
+    } catch (err) {
+        console.error('Failed to save log:', err);
+    }
 }
 
-function addToLog(item) {
-    const log = getLog();
-    log.push(item);
-    saveLog(log);
+// ─── LOG STATE ───
+let currentLog = [];
+
+async function addToLog(item) {
+    currentLog.push(item);
+    await saveLog(currentLog);
     renderLog();
 }
 
-function removeFromLog(index) {
-    const log = getLog();
-    log.splice(index, 1);
-    saveLog(log);
+async function removeFromLog(index) {
+    currentLog.splice(index, 1);
+    await saveLog(currentLog);
     renderLog();
 }
 
 // ─── RENDER LOG ───
 function renderLog() {
-    const log = getLog();
     const list = document.getElementById('log-list');
     const empty = document.getElementById('log-empty');
     list.innerHTML = '';
 
-    if (log.length === 0) {
+    if (currentLog.length === 0) {
         empty.classList.remove('hidden');
         updateTotals({ calories: 0, protein: 0, carbs: 0, fat: 0 });
         return;
@@ -49,7 +68,7 @@ function renderLog() {
 
     const totals = { calories: 0, protein: 0, carbs: 0, fat: 0 };
 
-    log.forEach((item, index) => {
+    currentLog.forEach((item, index) => {
         totals.calories += item.calories || 0;
         totals.protein += item.protein || 0;
         totals.carbs += item.carbs || 0;
@@ -71,7 +90,6 @@ function renderLog() {
 }
 
 function updateTotals(totals) {
-
     document.getElementById('total-calories').textContent = Math.round(totals.calories);
     document.getElementById('total-protein').textContent = Math.round(totals.protein) + 'g';
     document.getElementById('total-carbs').textContent = Math.round(totals.carbs) + 'g';
@@ -86,7 +104,7 @@ function switchTab(tab) {
     document.getElementById('tab-manual').classList.toggle('active', tab === 'manual');
 }
 
-// ─── SPOONACULAR search ───
+// ─── SPOONACULAR SEARCH ───
 document.getElementById('food-search-btn').addEventListener('click', searchFood);
 document.getElementById('food-search-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') searchFood();
@@ -100,7 +118,6 @@ async function searchFood() {
     results.innerHTML = '<p class="muted-text">Searching...</p>';
 
     try {
-        
         const recipes = await searchRecipes(query, 5);
         results.innerHTML = '';
 
@@ -140,7 +157,7 @@ async function searchFood() {
 }
 
 // ─── MANUAL ENTRY ───
-document.getElementById('manual-add-btn').addEventListener('click', () => {
+document.getElementById('manual-add-btn').addEventListener('click', async () => {
     const name = document.getElementById('manual-name').value.trim();
     const calories = parseFloat(document.getElementById('manual-calories').value) || 0;
     const protein = parseFloat(document.getElementById('manual-protein').value) || 0;
@@ -155,7 +172,7 @@ document.getElementById('manual-add-btn').addEventListener('click', () => {
     }
 
     error.classList.add('hidden');
-    addToLog({ name, calories, protein, carbs, fat });
+    await addToLog({ name, calories, protein, carbs, fat });
 
     document.getElementById('manual-name').value = '';
     document.getElementById('manual-calories').value = '';
@@ -165,11 +182,18 @@ document.getElementById('manual-add-btn').addEventListener('click', () => {
 });
 
 // ─── CLEAR LOG ───
-document.getElementById('clear-log-btn').addEventListener('click', () => {
+document.getElementById('clear-log-btn').addEventListener('click', async () => {
     if (confirm('Clear all food logged today?')) {
-        saveLog([]);
+        currentLog = [];
+        await saveLog([]);
         renderLog();
     }
 });
 
-renderLog();
+// ─── INIT ───
+async function init() {
+    currentLog = await fetchLog();
+    renderLog();
+}
+
+init();

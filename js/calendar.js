@@ -9,21 +9,31 @@ let currentMonth = new Date().getMonth();
 const now = new Date();
 const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
+let loggedDates = [];
 
-// ─── STORAGE ───
-function getLogForDate(dateStr) {
-    return JSON.parse(localStorage.getItem('log_' + dateStr)) || [];
+// ─── API CALLS ───
+async function fetchLoggedDates() {
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/foodlog`, {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        return await res.json();
+    } catch (err) {
+        console.error('Failed to fetch logged dates:', err);
+        return [];
+    }
 }
 
-function hasLogForDate(dateStr) {
-    const log = getLogForDate(dateStr);
-    return log.length > 0;
-}
-
-function formatDateStr(year, month, day) {
-    const mm = String(month + 1).padStart(2, '0');
-    const dd = String(day).padStart(2, '0');
-    return `${year}-${mm}-${dd}`;
+async function fetchLogForDate(dateStr) {
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/foodlog/${dateStr}`, {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        return await res.json();
+    } catch (err) {
+        console.error('Failed to fetch log:', err);
+        return [];
+    }
 }
 
 // ─── RENDER CALENDAR ───
@@ -40,17 +50,17 @@ function renderCalendar() {
     const firstDay = new Date(currentYear, currentMonth, 1).getDay();
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
-    // Empty cells before first day
     for (let i = 0; i < firstDay; i++) {
         const empty = document.createElement('div');
         empty.className = 'cal-day empty';
         daysContainer.appendChild(empty);
     }
 
-    // Day cells
     for (let day = 1; day <= daysInMonth; day++) {
-        const dateStr = formatDateStr(currentYear, currentMonth, day);
-        const hasLog = hasLogForDate(dateStr);
+        const mm = String(currentMonth + 1).padStart(2, '0');
+        const dd = String(day).padStart(2, '0');
+        const dateStr = `${currentYear}-${mm}-${dd}`;
+        const hasLog = loggedDates.includes(dateStr);
         const isToday = dateStr === todayStr;
 
         const cell = document.createElement('div');
@@ -63,13 +73,13 @@ function renderCalendar() {
             ${hasLog ? '<span class="cal-dot"></span>' : ''}
         `;
 
-        cell.addEventListener('click', () => showDayDetail(dateStr, day));
+        cell.addEventListener('click', () => showDayDetail(dateStr, day, cell));
         daysContainer.appendChild(cell);
     }
 }
 
 // ─── DAY DETAIL ───
-function showDayDetail(dateStr, day) {
+async function showDayDetail(dateStr, day, cellEl) {
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -80,18 +90,16 @@ function showDayDetail(dateStr, day) {
     document.getElementById('detail-content').classList.add('hidden');
     document.getElementById('detail-no-log').classList.add('hidden');
 
-    // Highlight selected day
     document.querySelectorAll('.cal-day').forEach(c => c.classList.remove('selected'));
-    event.currentTarget.classList.add('selected');
+    cellEl.classList.add('selected');
 
-    const log = getLogForDate(dateStr);
+    const log = await fetchLogForDate(dateStr);
 
-    if (log.length === 0) {
+    if (!log || log.length === 0) {
         document.getElementById('detail-no-log').classList.remove('hidden');
         return;
     }
 
-    // Totals
     const totals = log.reduce((acc, item) => {
         acc.calories += item.calories || 0;
         acc.protein += item.protein || 0;
@@ -119,7 +127,6 @@ function showDayDetail(dateStr, day) {
         </div>
     `;
 
-    // Log list
     const list = document.getElementById('detail-list');
     list.innerHTML = '';
     log.forEach(item => {
@@ -150,4 +157,10 @@ document.getElementById('next-month').addEventListener('click', () => {
     renderCalendar();
 });
 
-renderCalendar();
+// ─── INIT ───
+async function init() {
+    loggedDates = await fetchLoggedDates();
+    renderCalendar();
+}
+
+init();
