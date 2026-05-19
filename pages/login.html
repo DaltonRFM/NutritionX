@@ -37,31 +37,18 @@
     <script>
         if (getSession()) window.location.href = '/pages/browse.html';
 
-        document.getElementById('register-btn').addEventListener('click', async () => {
+        document.getElementById('login-btn').addEventListener('click', async () => {
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
-            const confirm = document.getElementById('confirm-password').value;
             const error = document.getElementById('error-message');
 
-            if (!email || !password || !confirm) {
+            if (!email || !password) {
                 error.textContent = 'Please fill in all fields.';
                 error.classList.remove('hidden');
                 return;
             }
 
-            if (password !== confirm) {
-                error.textContent = 'Passwords do not match.';
-                error.classList.remove('hidden');
-                return;
-            }
-
-            if (password.length < 6) {
-                error.textContent = 'Password must be at least 6 characters.';
-                error.classList.remove('hidden');
-                return;
-            }
-
-            const result = await register(email, password);
+            const result = await login(email, password);
             if (result.success) {
                 window.location.href = '/pages/browse.html';
             } else {
@@ -70,5 +57,3 @@
             }
         });
     </script>
-</body>
-</html>
